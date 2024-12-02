@@ -436,6 +436,31 @@ const PROVIDER_LIST: ProviderInfo[] = [
     getApiKeyLink: 'https://glhf.chat/users/settings/api',
     labelForGetApiKey: 'Get GLHF API Key',
   },
+  {
+    name: 'Together',
+    staticModels: [
+      {
+        name: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+        label: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+        provider: 'Together',
+        maxTokenAllowed: 8000,
+      },
+      {
+        name: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+        label: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+        provider: 'Together',
+        maxTokenAllowed: 8000,
+      },
+
+      {
+        name: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
+        label: 'Mixtral 8x7B Instruct',
+        provider: 'Together',
+        maxTokenAllowed: 8192,
+      },
+    ],
+    getApiKeyLink: 'https://api.together.xyz/settings/api-keys',
+  },
 ];
 
 export const DEFAULT_PROVIDER = PROVIDER_LIST[0];
