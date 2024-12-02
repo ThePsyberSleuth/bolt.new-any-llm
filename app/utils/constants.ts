@@ -433,7 +433,8 @@ const PROVIDER_LIST: ProviderInfo[] = [
     name: 'GLHF Models',
     staticModels: [],
     getDynamicModels: getGLHFModels,
-    getApiKeyLink: 'https://glhf.chat',
+    getApiKeyLink: 'https://glhf.chat/users/settings/api',
+    labelForGetApiKey: 'Get GLHF API Key',
   },
 ];
 
