@@ -102,7 +102,7 @@ export class ActionRunner {
       });
 
     await this.#currentExecutionPromise;
-    
+
     return;
   }
 
