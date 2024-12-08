@@ -738,7 +738,7 @@ async function getGLHFModels(): Promise<ModelInfo[]> {
       name: model.id,
       label: formatModelLabel(model.id),
       provider: 'GLHF Models',
-      maxTokenAllowed: 8192, // Default context window, adjust if needed
+      maxTokenAllowed: 8000, // Default context window, adjust if needed
     }));
   } catch (error) {
     console.error('Error fetching GLHF models:', error);
