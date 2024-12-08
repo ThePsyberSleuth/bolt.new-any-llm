@@ -1,4 +1,5 @@
 import type { ModelInfo, OllamaApiResponse, OllamaModel, GLHFModel, GLHFApiResponse } from './types';
+import Cookies from 'js-cookie';
 import type { ProviderInfo } from '~/types/model';
 
 export const WORK_DIR_NAME = 'project';
@@ -438,6 +439,7 @@ const PROVIDER_LIST: ProviderInfo[] = [
   },
   {
     name: 'Together',
+    getDynamicModels: getTogetherModels,
     staticModels: [
       {
         name: 'Qwen/Qwen2.5-Coder-32B-Instruct',
@@ -468,6 +470,61 @@ export const DEFAULT_PROVIDER = PROVIDER_LIST[0];
 const staticModels: ModelInfo[] = PROVIDER_LIST.map((p) => p.staticModels).flat();
 
 export let MODEL_LIST: ModelInfo[] = [...staticModels];
+
+export async function getModelList(apiKeys: Record<string, string>) {
+  MODEL_LIST = [
+    ...(
+      await Promise.all(
+        PROVIDER_LIST.filter(
+          (p): p is ProviderInfo & { getDynamicModels: () => Promise<ModelInfo[]> } => !!p.getDynamicModels,
+        ).map((p) => p.getDynamicModels(apiKeys)),
+      )
+    ).flat(),
+    ...staticModels,
+  ];
+  return MODEL_LIST;
+}
+
+async function getTogetherModels(apiKeys?: Record<string, string>): Promise<ModelInfo[]> {
+  try {
+    const baseUrl = import.meta.env.TOGETHER_API_BASE_URL || '';
+    const provider = 'Together';
+
+    if (!baseUrl) {
+      return [];
+    }
+
+    let apiKey = import.meta.env.OPENAI_LIKE_API_KEY ?? '';
+
+    if (apiKeys && apiKeys[provider]) {
+      apiKey = apiKeys[provider];
+    }
+
+    if (!apiKey) {
+      return [];
+    }
+
+    const response = await fetch(`${baseUrl}/models`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+    const res = (await response.json()) as any;
+    const data: any[] = (res || []).filter((model: any) => model.type == 'chat');
+
+    return data.map((m: any) => ({
+      name: m.id,
+      label: `${m.display_name} - in:$${m.pricing.input.toFixed(
+        2,
+      )} out:$${m.pricing.output.toFixed(2)} - context ${Math.floor(m.context_length / 1000)}k`,
+      provider,
+      maxTokenAllowed: 8000,
+    }));
+  } catch (e) {
+    console.error('Error getting OpenAILike models:', e);
+    return [];
+  }
+}
 
 const getOllamaBaseUrl = () => {
   const defaultBaseUrl = import.meta.env.OLLAMA_API_BASE_URL || 'http://localhost:11434';
@@ -514,7 +571,14 @@ async function getOpenAILikeModels(): Promise<ModelInfo[]> {
       return [];
     }
 
-    const apiKey = import.meta.env.OPENAI_LIKE_API_KEY ?? '';
+    let apiKey = import.meta.env.OPENAI_LIKE_API_KEY ?? '';
+
+    const apikeys = JSON.parse(Cookies.get('apiKeys') || '{}');
+
+    if (apikeys && apikeys.OpenAILike) {
+      apiKey = apikeys.OpenAILike;
+    }
+
     const response = await fetch(`${baseUrl}/models`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -747,16 +811,32 @@ async function getGLHFModels(): Promise<ModelInfo[]> {
 }
 
 async function initializeModelList(): Promise<ModelInfo[]> {
+  let apiKeys: Record<string, string> = {};
+
+  try {
+    const storedApiKeys = Cookies.get('apiKeys');
+
+    if (storedApiKeys) {
+      const parsedKeys = JSON.parse(storedApiKeys);
+
+      if (typeof parsedKeys === 'object' && parsedKeys !== null) {
+        apiKeys = parsedKeys;
+      }
+    }
+  } catch (error: any) {
+    console.warn(`Failed to fetch apikeys from cookies:${error?.message}`);
+  }
   MODEL_LIST = [
     ...(
       await Promise.all(
         PROVIDER_LIST.filter(
           (p): p is ProviderInfo & { getDynamicModels: () => Promise<ModelInfo[]> } => !!p.getDynamicModels,
-        ).map((p) => p.getDynamicModels()),
+        ).map((p) => p.getDynamicModels(apiKeys)),
       )
     ).flat(),
     ...staticModels,
   ];
+
   return MODEL_LIST;
 }
 
